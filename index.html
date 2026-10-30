@@ -198,6 +198,11 @@ button{font-family:inherit;color:inherit;font-size:inherit;border:0;background:n
 .reveal{opacity:0;transform:translateY(8px);transition:opacity .3s,transform .3s}
 .reveal.on{opacity:1;transform:none}
 .rBtns{display:flex;flex-direction:column;gap:8px}
+.rBtns .btn{white-space:nowrap}.rBtns .row>.btn.red{flex:1.7}
+.btn.xpost{background:#000;color:#fff;box-shadow:0 5px 0 #3a3a3a,0 10px 18px rgba(0,0,0,.22)}
+.btn.xpost:active{box-shadow:0 1px 0 #3a3a3a}
+.btn.xpost svg.xl{width:20px;height:20px;fill:#fff;stroke:none}
+@media (max-width:400px){.rBtns .row>.btn{padding:0 8px;gap:6px}}
 .rCard .shake{animation:shake .3s linear 2}
 @media (max-width:420px){.rBody{gap:10px}.rInfo{gap:6px}}
 @media (max-height:700px) and (max-aspect-ratio:1/1){.idCard{width:clamp(118px,34%,200px)}.rScore b{font-size:clamp(42px,12vw,64px)}.btn{min-height:46px}.btn.red{min-height:52px;font-size:19px}}
@@ -212,7 +217,9 @@ button{font-family:inherit;color:inherit;font-size:inherit;border:0;background:n
   .rScore b{font-size:clamp(38px,9vh,58px)}.rTitle{font-size:clamp(16px,5vh,22px)}
   .btn{min-height:44px;font-size:15px}.btn.red{min-height:48px;font-size:17px}
   .rReact .bub{font-size:13px}.stamp{width:66px;bottom:2px;right:-18px}.stamp b{font-size:32px}.rInfo{gap:5px}
-  .rBtns .row{flex-direction:column}
+  .rBtns .row{display:contents}
+  #bAgain{order:0}#bSave{order:1}#bX{order:2}#bTitle{order:3}
+  .rBtns{gap:6px}.rBtns .btn{min-height:38px}.rBtns .btn.red{min-height:46px}.btn.xpost svg.xl{width:16px;height:16px}
 }
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:40;background:var(--ink);color:#fff;font-weight:900;padding:10px 18px;border-radius:12px}
 #flash{position:fixed;inset:0;background:#fff;z-index:30;pointer-events:none;opacity:0}
@@ -326,10 +333,13 @@ button{font-family:inherit;color:inherit;font-size:inherit;border:0;background:n
       </div>
     </div>
     <div class="rBtns reveal" id="rBtns">
-      <button class="btn red" id="bAgain"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4h4"/></svg><span data-t="again"></span></button>
+      <div class="row">
+        <button class="btn red" id="bAgain"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 0 2.5-5.8M4 4v4h4"/></svg><span data-t="again"></span></button>
+        <button class="btn ghost" id="bTitle"><span data-t="toTitle"></span></button>
+      </div>
       <div class="row">
         <button class="btn yel" id="bSave"><svg viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg><span data-t="save"></span></button>
-        <button class="btn ghost" id="bTitle"><span data-t="toTitle"></span></button>
+        <button class="btn xpost" id="bX"><svg class="xl" viewBox="0 0 24 24" aria-hidden="true"><path d="M18.24 2.25h3.31l-7.23 8.26 8.5 11.24h-6.65l-5.21-6.82-5.97 6.82H1.68l7.73-8.84L1.25 2.25h6.83l4.71 6.23zm-1.16 17.52h1.83L7.08 4.13H5.12z"/></svg><span data-t="postX"></span></button>
       </div>
     </div>
   </div>
@@ -357,8 +367,8 @@ button{font-family:inherit;color:inherit;font-size:inherit;border:0;background:n
   },8000);
 })();
 </script>
-<script src="data.js?v=1"></script>
-<script src="snd.js?v=1"></script>
-<script type="module" src="game.js?v=1"></script>
+<script src="data.js?v=2"></script>
+<script src="snd.js?v=2"></script>
+<script type="module" src="game.js?v=2"></script>
 </body>
 </html>

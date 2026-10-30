@@ -735,6 +735,11 @@ $('#bHowGo').onclick = () => { sfx('tap'); startGame() }
 $('#bAgain').onclick = () => { sfx('tap'); revealTimers.forEach(clearTimeout); startGame() }
 $('#bTitle').onclick = () => { sfx('tap'); goTitle() }
 $('#bSave').onclick = () => { sfx('tap'); saveImage() }
+// Xでポスト: クリックの同期処理内で開く（ポップアップブロック回避）。URL は url パラメータで渡す
+const PUB_URL = 'https://tom3games.github.io/bedhead-rush/'
+function xText() { const R = S.result; if (!R) return ''; const rk = D.RANKS.find(r => r.id === R.rank), title = (R.special ? D.TITLES_SPECIAL[R.special] : rk)[S.lang]; return T('share').replace('{s}', R.score).replace('{t}', title) }
+function xUrl() { return 'https://x.com/intent/post?text=' + encodeURIComponent(xText()) + '&url=' + encodeURIComponent(PUB_URL) }
+$('#bX').onclick = () => { window.open(xUrl(), '_blank', 'noopener'); sfx('tap') }
 $('#bPause').onclick = () => pauseGame(true)
 $('#bResume').onclick = () => pauseGame(false)
 $('#bQuit').onclick = () => goTitle()
@@ -910,7 +915,7 @@ function render(d = 0) {
 window.bh = {
   S, D, inp, renderer, camera, scene, head, Snd,
   get strands() { return S.strands },
-  start: seed => startGame(seed), title: goTitle, finish, makeCard, saveImage, fillResult, capturePhoto, computeResult,
+  start: seed => startGame(seed), title: goTitle, finish, makeCard, saveImage, xText, xUrl, PUB_URL, fillResult, capturePhoto, computeResult,
   setBot: b => { S.bot = b }, setTool, result: () => S.result,
   simulate(seed, bot, quiet = true) {
     const keepSim = S.sim; S.sim = quiet; const v0 = S.view

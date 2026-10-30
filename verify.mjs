@@ -73,6 +73,34 @@ async function hold(p, i, frames) {
   const [x, y] = await p.evaluate(i => { bh.dbg.render(); return bh.toScreen(bh.strands[i].pts[3]) }, i)
   await p.mouse.move(x, y); await p.mouse.down(); await p.evaluate(f => bh.dbg.step(f), frames); await p.mouse.up(); await p.evaluate(() => bh.dbg.step(1))
 }
+// ---- Xでポスト の検査道具
+// window.open をスタブして押す → 開いたURLを分解して確かめる
+const xStub = async (pg, ns, pub, tag) => {
+  await pg.evaluate(() => { window.__opened = []; if (!window.__origOpen) window.__origOpen = window.open; window.open = (...a) => { window.__opened.push(a); return null } })
+  const vis = await pg.evaluate(() => { const b = document.querySelector('#bX'), r = b.getBoundingClientRect(); return { w: Math.round(r.width), h: Math.round(r.height), inView: r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth, clip: b.scrollWidth > b.clientWidth + 1, bg: getComputedStyle(b).backgroundColor, label: b.textContent.trim(), svg: !!b.querySelector('svg path') } })
+  await pg.click('#bX')
+  const r = await pg.evaluate(ns => ({ opened: window.__opened, text: window[ns].xText(), url: window[ns].xUrl() }), ns)
+  await pg.evaluate(() => { window.open = window.__origOpen })
+  expect(r.opened.length === 1, r)
+  const [u, target, feat] = r.opened[0], q = new URL(u)
+  const text = q.searchParams.get('text'), url = q.searchParams.get('url')
+  expect(u.startsWith('https://x.com/intent/post?') && target === '_blank' && /noopener/.test(feat || '') && u === r.url, r.opened[0])
+  expect(text === r.text && text.includes(tag) && (text.match(/#/g) || []).length === 1 && url === pub && !/https?:\/\//.test(text), { text, url })
+  expect(vis.inView && !vis.clip && vis.svg && vis.bg === 'rgb(0, 0, 0)' && vis.h >= 36, vis)
+  return { label: vis.label, text }
+}
+// 本物のクリックで新しいタブ（popup）が開く。x.com へは出ずにダミーを返す
+const xPopup = async (pg, pub) => {
+  await pg.context().route(/^https:\/\/x\.com\//, r => r.fulfill({ status: 200, contentType: 'text/html', body: '<title>x</title>ok' }))
+  const [pop] = await Promise.all([pg.waitForEvent('popup', { timeout: 8000 }), pg.click('#bX')])
+  await pop.waitForLoadState().catch(() => {})
+  const u = new URL(pop.url()); await pop.close()
+  expect(u.origin + u.pathname === 'https://x.com/intent/post' && u.searchParams.get('url') === pub && u.searchParams.get('text'), pop.url())
+  return u.searchParams.get('text')
+}
+// 結果画面のボタンの文字が切れていない
+const btnClip = pg => pg.evaluate(() => [...document.querySelectorAll('#vResult button')].filter(b => b.offsetParent && b.scrollWidth > b.clientWidth + 1).map(b => b.id + ':' + b.scrollWidth + '>' + b.clientWidth))
+const PUB = 'https://tom3games.github.io/bedhead-rush/'
 const SIZES = [[360, 640, 'small'], [390, 844, 'phone'], [844, 390, 'land'], [667, 375, 'land-se'], [768, 1024, 'tab'], [1440, 900, 'pc']]
 
 const browser = await chromium.launch({ args: ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist'] })
@@ -248,6 +276,20 @@ await t('結果画像 1080x1350（顔写真入り）が描けて保存（ダウ�
   writeFileSync(ROOT + '/shots/v-card.png', Buffer.from(info.url.split(',')[1], 'base64'))
   expect(info.w === 1080 && info.h === 1350 && info.photoVar > 300 && dl.suggestedFilename() === 'bedhead-rush.png', info.photoVar); return { w: info.w, h: info.h, photoVar: info.photoVar, file: dl.suggestedFilename() }
 })
+await t('Xでポスト: 日本語（ボタンが見える・x.com/intent/post・本文に点数と称号とハッシュタグ・url=公開URL）', async () => {
+  const r = await xStub(p, 'bh', PUB, '#寝癖なおし3分前')
+  const n = await p.evaluate(() => [document.querySelector('#rScore').textContent, document.querySelector('#rTitle').textContent])
+  expect(r.label === 'Xでポスト' && r.text.includes(n[0] + '点') && r.text.includes('「' + n[1] + '」'), { r, n }); return r.text
+})
+await t('Xでポスト: 本物のクリックで新しいタブが開く', async () => { const tx = await xPopup(p, PUB); expect(/#寝癖なおし3分前/.test(tx), tx); return tx.length })
+await t('Xでポスト: 英語', async () => {
+  await p.click('#bLang')
+  const r = await xStub(p, 'bh', PUB, '#BEDHEADRUSH')
+  const n = await p.evaluate(() => [document.querySelector('#rScore').textContent, document.querySelector('#rTitle').textContent])
+  await p.screenshot({ path: ROOT + '/shots/v-result-en-x.png' })
+  await p.click('#bLang')
+  expect(r.label === 'Post on X' && r.text.includes(n[0]) && r.text.includes(n[1]) && !/[ぁ-んァ-ン一-龥]/.test(r.text), { r, n }); return r.text
+})
 await t('もう一回ですぐ遊べる（状態が初期化される）', async () => {
   await p.click('#bAgain'); const r = await p.evaluate(() => ({ view: bh.S.view, t: bh.S.t, jar: bh.S.jar, plugged: bh.S.plugged, cat: bh.S.cat.st, n: bh.strands.length, messy: bh.strands.every(s => s.m >= 0.75), booms: bh.S.stats.booms }))
   expect(r.view === 'play' && r.t < 0.5 && r.jar === 1 && r.plugged && r.cat === 'off' && r.n === 16 && r.messy && r.booms === 0, r); return r
@@ -319,6 +361,9 @@ for (const [w, h, name] of SIZES) {
   await q.click('#bPause'); views.pause = await fit(q)
   await q.click('#bResume'); await q.evaluate(() => { bh.dbg.pause(true); bh.plug(); bh.tapCat(); bh.tapCat(); bh.tapCat(); bh.setBot('good'); let k = 0; while (bh.S.view === 'play' && k++ < 4000) bh.dbg.step(1); bh.setBot(null); bh.dbg.pause(false) })
   await q.waitForTimeout(3300); views.result = await fit(q); await q.screenshot({ path: `${ROOT}/shots/fit-${name}-result.png` })
+  const clipJa = await btnClip(q)
+  await q.click('#bLang'); await q.waitForTimeout(300); views.resultEn = await fit(q); const clipEn = await btnClip(q); await q.screenshot({ path: `${ROOT}/shots/fit-${name}-result-en.png` }); await q.click('#bLang'); await q.waitForTimeout(300)
+  await t(`${name}: 結果画面のボタンの文字が切れない（日英）`, async () => { expect(!clipJa.length && !clipEn.length, [clipJa, clipEn]) })
   for (const [v, r] of Object.entries(views)) await t(`一画面に収まる ${name} ${w}x${h} ${v}`, async () => { expect(!r.over.length, r) })
   await t(`${name}: はみ出し・エラーなし`, async () => { const o = await overflow(q); expect(o.sw <= o.W && !o.bad.length && !q.errs.length, JSON.stringify(o) + q.errs.join('|')) })
   await q.close()
