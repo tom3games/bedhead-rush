@@ -119,7 +119,7 @@ await t('ブラウザの拡大が起きない（viewport・ピンチ・Ctrl+ホ�
 })
 await t('OGP 一式があり og:image と og:url が公開先', async () => {
   const r = await p.evaluate(() => Object.fromEntries(['og:title', 'og:description', 'og:image', 'og:url', 'og:type'].map(k => [k, document.querySelector(`meta[property="${k}"]`)?.content]).concat([['tw', document.querySelector('meta[name="twitter:card"]')?.content]])))
-  expect(Object.values(r).every(Boolean) && r['og:image'] === 'https://tom3games.github.io/bedhead-rush/og.png?v=1' && r['og:url'] === 'https://tom3games.github.io/bedhead-rush/' && r.tw === 'summary_large_image', r)
+  expect(Object.values(r).every(Boolean) && r['og:image'] === 'https://tom3games.com/play/bedhead-rush/og.png?v=1' && r['og:url'] === 'https://tom3games.com/play/bedhead-rush/' && r.tw === 'summary_large_image', r)
 })
 await t('タイトル: 3D の洗面所と寝癖頭が描けている（輝度の散らばり）・寝ている顔', async () => { await p.waitForTimeout(400); const v = await glVariance(p); const face = await p.evaluate(() => bh.S.face); expect(v > 150 && face === 'sleep', { v, face }); return { variance: v, face } })
 await p.screenshot({ path: ROOT + '/shots/v-title.png' })
